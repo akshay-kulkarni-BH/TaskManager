@@ -1,8 +1,8 @@
 {
-  "name": "agent-manager",
+  "name": "rabbit-task-manager",
   "private": true,
   "version": "0.0.0",
-  "description": "AgentManager Personal Task Orchestration System",
+  "description": "Rabbit Task Manager Personal Task Orchestration System",
   "author": "Akshay",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -10,6 +10,37 @@
     "build": "vite build && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview"
+  },
+  "build": {
+    "productName": "Rabbit Task Manager",
+    "appId": "com.akshay.rabbittaskmanager",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "task_manager.ico"
+    ],
+    "win": {
+      "icon": "task_manager.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "task_manager.ico",
+      "uninstallerIcon": "task_manager.ico",
+      "installerHeaderIcon": "task_manager.ico",
+      "shortcutName": "Rabbit Task Manager",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",

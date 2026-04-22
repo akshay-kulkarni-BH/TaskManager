@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
-import path from 'path';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
-import { initDB, getDB, getCurrentDbPath } from './db.js';
+import { getCurrentDbPath, getDB, initDB } from './db.js';
 
 const __filename_esm = fileURLToPath(import.meta.url);
 const __dirname_esm = path.dirname(__filename_esm);
@@ -19,6 +19,7 @@ function createWindow() {
         width: 1280,
         height: 800,
         minWidth: 800,
+        icon: path.join(app.getAppPath(), 'task_manager.ico'),
         webPreferences: {
             preload: path.join(__dirname_esm, 'preload.js'),
             nodeIntegration: false,
@@ -34,7 +35,7 @@ function createWindow() {
         // Open DevTools in development
         mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(path.join(__dirname_esm, '../../dist/index.html'));
+        mainWindow.loadFile(path.join(app.getAppPath(), 'dist/index.html'));
     }
 }
 
