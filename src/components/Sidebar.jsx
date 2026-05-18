@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import { Sun, Star, Calendar, Home, Menu, BarChart2, Moon, Sliders, Zap, Archive } from 'lucide-react';
+import { Archive, BarChart2, Calendar, Home, Menu, Sliders, Star, Sun, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function Sidebar({ activeFilter, onSelectFilter }) {
     const [collapsed, setCollapsed] = useState(false);
+    const [appVersion, setAppVersion] = useState('');
+
+    useEffect(() => {
+        window.electronAPI?.getVersion().then(setAppVersion).catch(() => {});
+    }, []);
 
     const navItems = [
         { id: 'my-day', label: 'My Day', icon: Sun, color: '#ca8a04' },      // text-yellow-600
@@ -46,12 +51,16 @@ export function Sidebar({ activeFilter, onSelectFilter }) {
                     className={`nav-item ${activeFilter === 'settings' ? 'active' : ''}`}
                     style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: '12px 16px' }}
                     onClick={() => onSelectFilter('settings')}
-
                     title={collapsed ? 'Settings' : ''}
                 >
                     <Sliders size={20} style={{ color: '#6b7280' }} />
                     {!collapsed && <span>Settings</span>}
                 </div>
+                {!collapsed && appVersion && (
+                    <div style={{ padding: '6px 16px', fontSize: '11px', color: '#9ca3af', userSelect: 'none' }}>
+                        v{appVersion}
+                    </div>
+                )}
             </div>
         </div>
     );

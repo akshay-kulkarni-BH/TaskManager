@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
-import { Plus, Calendar, Bell, Tag, X, Search } from 'lucide-react';
+import { Bell, Calendar, Plus, Search, Tag, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
-import { Sidebar } from './Sidebar';
-import { TaskRow } from './TaskRow';
-import { TaskDetail } from './TaskDetail';
 import { Analytics } from './Analytics';
 import { Settings } from './Settings';
+import { Sidebar } from './Sidebar';
+import { TaskDetail } from './TaskDetail';
+import { TaskRow } from './TaskRow';
 
 export function Dashboard() {
     const { tasks, stats, settings, addTask, updateTask, updateSettings } = useTasks();
     const [filter, setFilter] = useState('all');
-    const [selectedTask, setSelectedTask] = useState(null);
+    const [selectedTaskId, setSelectedTaskId] = useState(null);
+    const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) ?? null : null;
 
     // Search and Filter State
     const [searchQuery, setSearchQuery] = useState('');
@@ -212,7 +213,7 @@ export function Dashboard() {
                                         key={task.id}
                                         task={task}
                                         selected={selectedTask?.id === task.id}
-                                        onSelect={setSelectedTask}
+                                        onSelect={t => setSelectedTaskId(t.id)}
                                         onComplete={(id) => updateTask(id, {
                                             status: task.status === 'completed' ? 'pending' : 'completed',
                                             completedAt: task.status !== 'completed' ? new Date().toISOString() : null
@@ -341,12 +342,12 @@ export function Dashboard() {
                 {selectedTask && filter !== 'analytics' && (
                     <TaskDetail
                         task={selectedTask}
-                        onClose={() => setSelectedTask(null)}
+                        onClose={() => setSelectedTaskId(null)}
                         onUpdate={updateTask}
                         onDelete={(id) => {
                             // Basic delete/archive - status 'deleted' or remove
                             updateTask(id, { status: 'deleted' }); // soft delete
-                            setSelectedTask(null);
+                            setSelectedTaskId(null);
                         }}
                     />
                 )}

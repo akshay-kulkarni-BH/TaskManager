@@ -1,7 +1,7 @@
 {
   "name": "rabbit-task-manager",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "description": "Rabbit Task Manager Personal Task Orchestration System",
   "author": "Akshay",
   "main": "dist-electron/main.js",

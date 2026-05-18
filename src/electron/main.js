@@ -194,3 +194,6 @@ ipcMain.handle('db:switch-path', async () => {
 
 // Test Ping
 ipcMain.handle('ping', () => 'pong');
+
+// App version
+ipcMain.handle('app:get-version', () => app.getVersion());

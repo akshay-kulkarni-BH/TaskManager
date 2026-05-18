@@ -10,4 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Database Management
     switchDatabase: () => ipcRenderer.invoke('db:switch-path'),
     getDatabasePath: () => ipcRenderer.invoke('db:get-current-path'),
+
+    // App info
+    getVersion: () => ipcRenderer.invoke('app:get-version'),
 });
