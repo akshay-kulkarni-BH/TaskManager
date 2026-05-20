@@ -1,7 +1,8 @@
-import { Bell, Calendar, Plus, Search, Tag, X } from 'lucide-react';
+import { Bell, Calendar, Clock, Plus, Search, Tag, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { Analytics } from './Analytics';
+import { CalendarView } from './CalendarView';
 import { Settings } from './Settings';
 import { Sidebar } from './Sidebar';
 import { TaskDetail } from './TaskDetail';
@@ -25,6 +26,8 @@ export function Dashboard() {
     const [newTaskTags, setNewTaskTags] = useState([]);
     const [isTagInputVisible, setIsTagInputVisible] = useState(false);
     const [tagInputValue, setTagInputValue] = useState('');
+    const [newTaskPlannedTime, setNewTaskPlannedTime] = useState(null);
+    const [isPlannedTimeVisible, setIsPlannedTimeVisible] = useState(false);
 
     const dateInputRef = useRef(null);
     const reminderInputRef = useRef(null);
@@ -44,6 +47,7 @@ export function Dashboard() {
         : { backgroundImage: 'url(/background_image_1.jpg)' }; // Default fallback
 
     // Filter Logic
+    const today = new Date().toISOString().split('T')[0];
     const filteredTasks = tasks.filter(task => {
         if (filter === 'archive') return task.status === 'completed';
         // For all other regular views, hide completed tasks
@@ -51,8 +55,8 @@ export function Dashboard() {
 
         if (filter === 'important') return task.importance > 7;
         if (filter === 'urgent') return task.urgency > 7;
+        if (filter === 'my-day') return task.myDayDate === today;
         
-        // 'my-day' & 'planned' pending logic implementation
         return true;
     }).filter(task => {
         const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -71,7 +75,9 @@ export function Dashboard() {
             urgency: filter === 'urgent' ? 8 : 5,
             targetDate: newTaskDate,
             reminder: newTaskReminder,
-            tags: newTaskTags
+            tags: newTaskTags,
+            myDayDate: filter === 'my-day' ? today : null,
+            plannedTime: newTaskPlannedTime
         });
 
         // Reset Logic
@@ -81,6 +87,8 @@ export function Dashboard() {
         setNewTaskTags([]);
         setIsTagInputVisible(false);
         setTagInputValue('');
+        setNewTaskPlannedTime(null);
+        setIsPlannedTimeVisible(false);
     };
 
     const handleTagInputKeyDown = (e) => {
@@ -130,6 +138,8 @@ export function Dashboard() {
                 <div className="main-content">
                     {filter === 'analytics' ? (
                         <Analytics tasks={tasks} />
+                    ) : filter === 'calendar' ? (
+                        <CalendarView tasks={tasks} />
                     ) : filter === 'settings' ? (
                         <Settings
                             opacity={opacity}
@@ -141,7 +151,7 @@ export function Dashboard() {
                         />
                     ) : (
                         <div className="main-content-overlay">
-                            <header className="py-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <header className="py-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <h2 className="text-2xl font-bold text-brand-primary" style={{ textTransform: 'capitalize' }}>
                                         {filter.replace('-', ' ')}
@@ -153,7 +163,7 @@ export function Dashboard() {
                                     )}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '6px' }}>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                     {isSearchVisible ? (
                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <input 
@@ -207,6 +217,28 @@ export function Dashboard() {
                                 </div>
                             </header>
 
+                            {/* Time Summary Card - My Day only */}
+                            {filter === 'my-day' && (() => {
+                                const totalPT = filteredTasks.reduce((sum, t) => sum + (t.plannedTime || 0), 0);
+                                const totalAT = filteredTasks.reduce((sum, t) => sum + (t.actualTime || 0), 0);
+                                if (totalPT === 0 && totalAT === 0) return null;
+                                const formatTime = (mins) => {
+                                    if (!mins) return '0m';
+                                    const h = Math.floor(mins / 60);
+                                    const m = mins % 60;
+                                    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m}m`;
+                                };
+                                const overBudget = totalAT > totalPT && totalPT > 0;
+                                return (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-light)', backgroundColor: 'var(--bg-surface)', marginBottom: '12px', fontSize: '0.8rem' }}>
+                                        <Clock size={14} style={{ color: 'var(--text-secondary)' }} />
+                                        <span style={{ color: 'var(--text-secondary)' }}>Planned: <strong style={{ color: 'var(--text-primary)' }}>{formatTime(totalPT)}</strong></span>
+                                        <span style={{ color: 'var(--text-placeholder)' }}>|</span>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Actual: <strong style={{ color: overBudget ? '#dc2626' : 'var(--text-primary)' }}>{formatTime(totalAT)}</strong></span>
+                                    </div>
+                                );
+                            })()}
+
                             <div className="task-list">
                                 {filteredTasks.map(task => (
                                     <TaskRow
@@ -216,10 +248,16 @@ export function Dashboard() {
                                         onSelect={t => setSelectedTaskId(t.id)}
                                         onComplete={(id) => updateTask(id, {
                                             status: task.status === 'completed' ? 'pending' : 'completed',
-                                            completedAt: task.status !== 'completed' ? new Date().toISOString() : null
+                                            completedAt: task.status !== 'completed' ? new Date().toISOString() : null,
+                                            myDayDate: task.status !== 'completed' ? null : task.myDayDate
                                         })}
                                         onToggleImportance={(id) => updateTask(id, { importance: task.importance > 7 ? 1 : 10 })}
                                         onUpdate={updateTask}
+                                        activeFilter={filter}
+                                        onAddToMyDay={(id) => {
+                                            const todayStr = new Date().toISOString().split('T')[0];
+                                            updateTask(id, { myDayDate: todayStr });
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -247,13 +285,13 @@ export function Dashboard() {
                                                 <input
                                                     type="date"
                                                     ref={dateInputRef}
-                                                    style={{ position: 'absolute', opacity: 0, bottom: '100%', left: 0, zIndex: -1, width: 0, height: 0 }}
+                                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, pointerEvents: 'none', zIndex: 0 }}
                                                     onChange={(e) => setNewTaskDate(e.target.value)}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => dateInputRef.current?.showPicker()}
-                                                    style={{ padding: '6px', borderRadius: '4px', border: 'none', background: newTaskDate ? 'var(--bg-hover)' : 'transparent', color: newTaskDate ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                    style={{ padding: '6px', borderRadius: '4px', border: 'none', background: newTaskDate ? 'var(--bg-hover)' : 'transparent', color: newTaskDate ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', position: 'relative', zIndex: 1 }}
                                                     title="Set Due Date"
                                                 >
                                                     <Calendar size={18} />
@@ -265,13 +303,13 @@ export function Dashboard() {
                                                 <input
                                                     type="datetime-local"
                                                     ref={reminderInputRef}
-                                                    style={{ position: 'absolute', opacity: 0, bottom: '100%', left: 0, zIndex: -1, width: 0, height: 0 }}
+                                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, pointerEvents: 'none', zIndex: 0 }}
                                                     onChange={(e) => setNewTaskReminder(e.target.value)}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => reminderInputRef.current?.showPicker()}
-                                                    style={{ padding: '6px', borderRadius: '4px', border: 'none', background: newTaskReminder ? 'var(--bg-hover)' : 'transparent', color: newTaskReminder ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                    style={{ padding: '6px', borderRadius: '4px', border: 'none', background: newTaskReminder ? 'var(--bg-hover)' : 'transparent', color: newTaskReminder ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', position: 'relative', zIndex: 1 }}
                                                     title="Set Reminder"
                                                 >
                                                     <Bell size={18} />
@@ -287,12 +325,22 @@ export function Dashboard() {
                                             >
                                                 <Tag size={18} />
                                             </button>
+
+                                            {/* Planned Time Toggle */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPlannedTimeVisible(!isPlannedTimeVisible)}
+                                                style={{ padding: '6px', borderRadius: '4px', border: 'none', background: newTaskPlannedTime ? 'var(--bg-hover)' : 'transparent', color: newTaskPlannedTime ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                title="Set Planned Time"
+                                            >
+                                                <Clock size={18} />
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
 
                                 {/* Active Tags & Input Row (appears below if needed) */}
-                                {(newTaskTags.length > 0 || isTagInputVisible || newTaskDate || newTaskReminder) && (
+                                {(newTaskTags.length > 0 || isTagInputVisible || newTaskDate || newTaskReminder || newTaskPlannedTime || isPlannedTimeVisible) && (
                                     <div style={{ paddingLeft: '2.5rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '12px' }}>
                                         {/* Status Text for Date/Time */}
                                         {newTaskDate && (
@@ -304,6 +352,30 @@ export function Dashboard() {
                                             <span style={{ color: 'var(--brand-primary)', fontWeight: 500 }}>
                                                 Remind: {new Date(newTaskReminder).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
+                                        )}
+                                        {newTaskPlannedTime && (
+                                            <span style={{ color: 'var(--brand-primary)', fontWeight: 500 }}>
+                                                PT: {newTaskPlannedTime}m
+                                            </span>
+                                        )}
+
+                                        {/* Planned Time Input */}
+                                        {isPlannedTimeVisible && (
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="fluent-input"
+                                                style={{
+                                                    fontSize: '12px', padding: '2px 6px', width: '80px',
+                                                    color: isDarkMode ? 'white' : 'var(--text-primary)',
+                                                    border: '1px solid var(--border-light)',
+                                                    background: 'transparent'
+                                                }}
+                                                placeholder="Minutes"
+                                                value={newTaskPlannedTime || ''}
+                                                onChange={(e) => setNewTaskPlannedTime(e.target.value ? parseInt(e.target.value) : null)}
+                                                autoFocus
+                                            />
                                         )}
 
                                         {/* Tags */}

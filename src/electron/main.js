@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Notification } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -61,15 +61,76 @@ function saveConfig(config) {
     }
 }
 
+// --- My Day Daily Reset & Auto-populate ---
+function resetMyDayTasks() {
+    try {
+        const db = getDB();
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Clear myDayDate for previous-day unattended tasks (not in-progress, not urgent)
+        db.prepare(`
+            UPDATE tasks SET my_day_date = NULL
+            WHERE my_day_date IS NOT NULL AND my_day_date < ?
+              AND status != 'in-progress'
+              AND (urgency IS NULL OR urgency <= 7)
+        `).run(today);
+
+        // 2. Auto-add all in-progress and urgent non-completed tasks to today's My Day
+        db.prepare(`
+            UPDATE tasks SET my_day_date = ?
+            WHERE status != 'completed' AND status != 'deleted'
+              AND (status = 'in-progress' OR urgency > 7)
+        `).run(today);
+
+        console.log('My Day refreshed for today');
+    } catch (err) {
+        console.error('Failed to refresh My Day tasks:', err);
+    }
+}
+
+// --- Reminder Notification Checker ---
+// Checks every 30 seconds for tasks with reminders that are due
+const notifiedReminders = new Set();
+
+function startReminderChecker() {
+    setInterval(() => {
+        try {
+            const db = getDB();
+            const now = new Date();
+            const tasks = db.prepare(
+                `SELECT id, title, reminder FROM tasks WHERE reminder IS NOT NULL AND status != 'completed' AND status != 'deleted'`
+            ).all();
+
+            for (const task of tasks) {
+                if (notifiedReminders.has(task.id)) continue;
+                const reminderTime = new Date(task.reminder);
+                if (reminderTime <= now) {
+                    notifiedReminders.add(task.id);
+                    const notification = new Notification({
+                        title: 'Rabbit Task Manager',
+                        body: task.title,
+                        icon: path.join(app.getAppPath(), 'task_manager.ico')
+                    });
+                    notification.show();
+                }
+            }
+        } catch (err) {
+            console.error('Reminder check error:', err);
+        }
+    }, 30000); // Check every 30 seconds
+}
+
 app.whenReady().then(() => {
     const config = loadConfig();
     try {
         initDB(config.dbPath);
+        resetMyDayTasks();
     } catch (err) {
         console.error('Failed to init DB on launch:', err);
     }
 
     createWindow();
+    startReminderChecker();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -100,7 +161,11 @@ ipcMain.handle('db:get-all', () => {
             subtasks: t.subtasks ? JSON.parse(t.subtasks) : [],
             targetDate: t.target_date,
             createdAt: t.created_at,
-            completedAt: t.completed_at
+            completedAt: t.completed_at,
+            reminder: t.reminder || null,
+            myDayDate: t.my_day_date || null,
+            plannedTime: t.planned_time || null,
+            actualTime: t.actual_time || null
         }));
 
         const settings = settingsRows.reduce((acc, row) => {
@@ -118,13 +183,18 @@ ipcMain.handle('db:get-all', () => {
 ipcMain.handle('db:add-task', (_, task) => {
     const db = getDB();
     const stmt = db.prepare(`
-        INSERT INTO tasks (id, title, description, status, created_at, tags, importance, urgency, subtasks)
-        VALUES (@id, @title, @description, @status, @createdAt, @tags, @importance, @urgency, @subtasks)
+        INSERT INTO tasks (id, title, description, status, created_at, tags, importance, urgency, subtasks, target_date, reminder, my_day_date, planned_time, actual_time)
+        VALUES (@id, @title, @description, @status, @createdAt, @tags, @importance, @urgency, @subtasks, @targetDate, @reminder, @myDayDate, @plannedTime, @actualTime)
     `);
     const info = stmt.run({
         ...task,
         tags: JSON.stringify(task.tags || []),
-        subtasks: JSON.stringify(task.subtasks || [])
+        subtasks: JSON.stringify(task.subtasks || []),
+        targetDate: task.targetDate || null,
+        reminder: task.reminder || null,
+        myDayDate: task.myDayDate || null,
+        plannedTime: task.plannedTime || null,
+        actualTime: task.actualTime || null
     });
     return info.lastInsertRowid;
 });
@@ -135,7 +205,10 @@ ipcMain.handle('db:update-task', (_, { id, updates }) => {
             targetDate: 'target_date',
             pushHistory: 'push_history',
             createdAt: 'created_at',
-            completedAt: 'completed_at'
+            completedAt: 'completed_at',
+            myDayDate: 'my_day_date',
+            plannedTime: 'planned_time',
+            actualTime: 'actual_time'
         };
         const col = colMap[k] || k;
         return `${col} = @${k}`;

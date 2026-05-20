@@ -1,4 +1,4 @@
-import { Archive, BarChart2, Calendar, Home, Menu, Sliders, Star, Sun, Zap } from 'lucide-react';
+import { Archive, BarChart2, CalendarDays, Home, Menu, Sliders, Star, Sun, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function Sidebar({ activeFilter, onSelectFilter }) {
@@ -13,9 +13,9 @@ export function Sidebar({ activeFilter, onSelectFilter }) {
         { id: 'my-day', label: 'My Day', icon: Sun, color: '#ca8a04' },      // text-yellow-600
         { id: 'important', label: 'Important', icon: Star, color: '#e11d48' }, // text-rose-600
         { id: 'urgent', label: 'Urgent', icon: Zap, color: '#f59e0b' }, // text-amber-500
-        { id: 'planned', label: 'Planned', icon: Calendar, color: '#0891b2' }, // text-cyan-600
         { id: 'all', label: 'Tasks', icon: Home, color: '#2563eb' },           // text-blue-600
         { id: 'archive', label: 'Archive', icon: Archive, color: '#6b7280' }, // text-gray-500
+        { id: 'calendar', label: 'Calendar', icon: CalendarDays, color: '#7c3aed' }, // text-purple-600
         { id: 'analytics', label: 'Analytics', icon: BarChart2, color: '#059669' }, // text-emerald-600
     ];
 
@@ -57,7 +57,7 @@ export function Sidebar({ activeFilter, onSelectFilter }) {
                     {!collapsed && <span>Settings</span>}
                 </div>
                 {!collapsed && appVersion && (
-                    <div style={{ padding: '6px 16px', fontSize: '11px', color: '#9ca3af', userSelect: 'none' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '11px', color: '#4b5563', userSelect: 'none' }}>
                         v{appVersion}
                     </div>
                 )}

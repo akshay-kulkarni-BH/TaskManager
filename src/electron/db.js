@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
-import path from 'path';
 import { app } from 'electron';
+import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname_esm = path.dirname(fileURLToPath(import.meta.url));
@@ -61,6 +61,30 @@ export function initDB(customPath) {
         // Migration for existing tables
         try {
             dbInstance.exec("ALTER TABLE tasks ADD COLUMN subtasks TEXT");
+        } catch (e) {
+            // Column already exists
+        }
+
+        try {
+            dbInstance.exec("ALTER TABLE tasks ADD COLUMN reminder TEXT");
+        } catch (e) {
+            // Column already exists
+        }
+
+        try {
+            dbInstance.exec("ALTER TABLE tasks ADD COLUMN my_day_date TEXT");
+        } catch (e) {
+            // Column already exists
+        }
+
+        try {
+            dbInstance.exec("ALTER TABLE tasks ADD COLUMN planned_time INTEGER");
+        } catch (e) {
+            // Column already exists
+        }
+
+        try {
+            dbInstance.exec("ALTER TABLE tasks ADD COLUMN actual_time INTEGER");
         } catch (e) {
             // Column already exists
         }

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, Bell, Repeat, FileText, Trash2, Star, AlertCircle, Play, Check } from 'lucide-react';
+import { AlertCircle, Bell, Calendar, Check, Clock, Play, Star, Sun, Trash2, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
     const [title, setTitle] = useState(task.title);
@@ -51,55 +51,82 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                 <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
                     {/* Title Edit */}
                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                        <input
+                        <textarea
                             className="fluent-input"
-                            style={{ fontSize: '1.25rem', fontWeight: 600, backgroundColor: 'transparent', color: 'var(--text-primary)' }}
+                            style={{ fontSize: '1.25rem', fontWeight: 600, backgroundColor: 'transparent', color: 'var(--text-primary)', resize: 'none', overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', minHeight: '2rem' }}
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                            }}
                             onBlur={() => onUpdate(task.id, { title })}
+                            rows={1}
+                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                         />
                     </div>
 
                     {/* Quick Actions */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
 
-                        {/* Hidden Native Inputs for Pickers */}
-                        <input
-                            type="date"
-                            ref={dateInputRef}
-                            style={{ display: 'none' }}
-                            onChange={(e) => onUpdate(task.id, { targetDate: e.target.value })}
-                        />
-                        <input
-                            type="datetime-local"
-                            ref={reminderInputRef}
-                            style={{ display: 'none' }}
-                            onChange={(e) => onUpdate(task.id, { reminder: e.target.value })}
-                        />
-
-                        <button style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', width: '100%', cursor: 'pointer', textAlign: 'left' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                            <Sun size={18} /> Add to My Day
-                        </button>
+                        {/* Hidden Native Inputs for Pickers - removed from here, moved next to buttons */}
 
                         <button
-                            onClick={() => dateInputRef.current?.showPicker()}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', width: '100%', cursor: 'pointer', textAlign: 'left' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                            <Calendar size={18} />
-                            {task.targetDate ? new Date(task.targetDate).toLocaleDateString() : 'Add due date'}
+                            onClick={() => {
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                if (task.myDayDate === todayStr) {
+                                    onUpdate(task.id, { myDayDate: null });
+                                } else {
+                                    onUpdate(task.id, { myDayDate: todayStr });
+                                }
+                            }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem',
+                                border: '1px solid',
+                                borderColor: task.myDayDate === new Date().toISOString().split('T')[0] ? '#fbbf24' : 'var(--border-light)',
+                                background: task.myDayDate === new Date().toISOString().split('T')[0] ? '#fef3c7' : 'transparent',
+                                color: task.myDayDate === new Date().toISOString().split('T')[0] ? '#d97706' : 'var(--text-secondary)',
+                                width: '100%', cursor: 'pointer', textAlign: 'left'
+                            }}
+                            onMouseEnter={(e) => { if (task.myDayDate !== new Date().toISOString().split('T')[0]) e.currentTarget.style.backgroundColor = 'var(--bg-hover)' }}
+                            onMouseLeave={(e) => { if (task.myDayDate !== new Date().toISOString().split('T')[0]) e.currentTarget.style.backgroundColor = 'transparent' }}>
+                            <Sun size={18} />
+                            {task.myDayDate === new Date().toISOString().split('T')[0] ? 'Added to My Day' : 'Add to My Day'}
                         </button>
 
-                        <button
-                            onClick={() => reminderInputRef.current?.showPicker()}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', width: '100%', cursor: 'pointer', textAlign: 'left' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                            <Bell size={18} />
-                            {task.reminder ? new Date(task.reminder).toLocaleString() : 'Remind me'}
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="date"
+                                ref={dateInputRef}
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, pointerEvents: 'none', zIndex: 0 }}
+                                onChange={(e) => onUpdate(task.id, { targetDate: e.target.value })}
+                            />
+                            <button
+                                onClick={() => dateInputRef.current?.showPicker()}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', width: '100%', cursor: 'pointer', textAlign: 'left', position: 'relative', zIndex: 1 }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                <Calendar size={18} />
+                                {task.targetDate ? new Date(task.targetDate).toLocaleDateString() : 'Add due date'}
+                            </button>
+                        </div>
+
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="datetime-local"
+                                ref={reminderInputRef}
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, pointerEvents: 'none', zIndex: 0 }}
+                                onChange={(e) => onUpdate(task.id, { reminder: e.target.value })}
+                            />
+                            <button
+                                onClick={() => reminderInputRef.current?.showPicker()}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', width: '100%', cursor: 'pointer', textAlign: 'left', position: 'relative', zIndex: 1 }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                <Bell size={18} />
+                                {task.reminder ? new Date(task.reminder).toLocaleString() : 'Remind me'}
+                            </button>
+                        </div>
                         
                         <button
                             onClick={() => {
@@ -112,6 +139,43 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                             <Play size={18} />
                             {task.status === 'in-progress' ? 'In Progress' : 'Mark as In Progress'}
                         </button>
+                    </div>
+
+                    {/* Time Tracking Section */}
+                    <div style={{ padding: '1rem', borderRadius: '0.25rem', border: '1px solid var(--border-light)', marginBottom: '1.5rem', backgroundColor: 'var(--bg-surface)' }}>
+                        <h3 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '1rem' }}>Time Tracking</h3>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Planned (min)</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Clock size={14} style={{ color: 'var(--text-secondary)' }} />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="fluent-input"
+                                        style={{ width: '100%', padding: '0.4rem', fontSize: '0.875rem', backgroundColor: 'transparent', color: 'var(--text-primary)' }}
+                                        placeholder="0"
+                                        value={task.plannedTime || ''}
+                                        onChange={(e) => onUpdate(task.id, { plannedTime: e.target.value ? parseInt(e.target.value) : null })}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Actual (min)</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Clock size={14} style={{ color: 'var(--text-secondary)' }} />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="fluent-input"
+                                        style={{ width: '100%', padding: '0.4rem', fontSize: '0.875rem', backgroundColor: 'transparent', color: 'var(--text-primary)' }}
+                                        placeholder="0"
+                                        value={task.actualTime || ''}
+                                        onChange={(e) => onUpdate(task.id, { actualTime: e.target.value ? parseInt(e.target.value) : null })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Priority & Tags Section */}
@@ -286,9 +350,4 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
             </div>
         </div>
     );
-}
-
-// Icon helper since I missed importing Sun
-function Sun({ size, className }) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>;
 }

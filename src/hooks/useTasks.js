@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export function useTasks() {
     const [tasks, setTasks] = useState([]);
@@ -49,6 +49,11 @@ export function useTasks() {
             importance: 5,
             urgency: 5,
             description: '',
+            targetDate: null,
+            reminder: null,
+            myDayDate: null,
+            plannedTime: null,
+            actualTime: null,
             ...task
         };
 
