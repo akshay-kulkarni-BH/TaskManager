@@ -67,7 +67,14 @@ function resetMyDayTasks() {
         const db = getDB();
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. Clear myDayDate for previous-day unattended tasks (not in-progress, not urgent)
+        // 1. Clear myDayDate for previous-day completed tasks (move to archive)
+        db.prepare(`
+            UPDATE tasks SET my_day_date = NULL
+            WHERE my_day_date IS NOT NULL AND my_day_date < ?
+              AND status = 'completed'
+        `).run(today);
+
+        // 2. Clear myDayDate for previous-day unattended tasks (not in-progress, not urgent)
         db.prepare(`
             UPDATE tasks SET my_day_date = NULL
             WHERE my_day_date IS NOT NULL AND my_day_date < ?

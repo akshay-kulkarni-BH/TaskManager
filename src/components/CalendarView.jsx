@@ -27,7 +27,10 @@ export function CalendarView({ tasks }) {
 
     const getDateStr = (day) => {
         const d = new Date(year, month, day);
-        return d.toISOString().split('T')[0];
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
     };
 
     const getDayData = (day) => {
@@ -56,7 +59,8 @@ export function CalendarView({ tasks }) {
         };
     };
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

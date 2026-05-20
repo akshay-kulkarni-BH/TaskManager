@@ -50,18 +50,31 @@ export function Dashboard() {
     const today = new Date().toISOString().split('T')[0];
     const filteredTasks = tasks.filter(task => {
         if (filter === 'archive') return task.status === 'completed';
+        // My Day: show pending tasks for today + tasks completed today
+        if (filter === 'my-day') {
+            if (task.status === 'deleted') return false;
+            if (task.myDayDate !== today) return false;
+            if (task.status === 'completed') return task.completedAt?.startsWith(today);
+            return true;
+        }
         // For all other regular views, hide completed tasks
         if (task.status === 'completed') return false;
 
         if (filter === 'important') return task.importance > 7;
         if (filter === 'urgent') return task.urgency > 7;
-        if (filter === 'my-day') return task.myDayDate === today;
         
         return true;
     }).filter(task => {
         const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesTag = tagFilter ? (task.tags && task.tags.includes(tagFilter)) : true;
         return matchesSearch && matchesTag;
+    }).sort((a, b) => {
+        // In My Day, push completed tasks to the bottom
+        if (filter === 'my-day') {
+            if (a.status === 'completed' && b.status !== 'completed') return 1;
+            if (a.status !== 'completed' && b.status === 'completed') return -1;
+        }
+        return 0;
     });
 
     const allTags = Array.from(new Set(tasks.flatMap(t => t.tags || [])));
@@ -248,8 +261,7 @@ export function Dashboard() {
                                         onSelect={t => setSelectedTaskId(t.id)}
                                         onComplete={(id) => updateTask(id, {
                                             status: task.status === 'completed' ? 'pending' : 'completed',
-                                            completedAt: task.status !== 'completed' ? new Date().toISOString() : null,
-                                            myDayDate: task.status !== 'completed' ? null : task.myDayDate
+                                            completedAt: task.status !== 'completed' ? new Date().toISOString() : null
                                         })}
                                         onToggleImportance={(id) => updateTask(id, { importance: task.importance > 7 ? 1 : 10 })}
                                         onUpdate={updateTask}
