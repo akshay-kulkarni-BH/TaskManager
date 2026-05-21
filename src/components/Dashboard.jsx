@@ -233,7 +233,7 @@ export function Dashboard() {
                             {/* Time Summary Card - My Day only */}
                             {filter === 'my-day' && (() => {
                                 const totalPT = filteredTasks.reduce((sum, t) => sum + (t.plannedTime || 0), 0);
-                                const totalAT = filteredTasks.reduce((sum, t) => sum + (t.actualTime || 0), 0);
+                                const totalAT = filteredTasks.reduce((sum, t) => sum + (t.actualTimeDate === today ? (t.actualTime || 0) : 0), 0);
                                 if (totalPT === 0 && totalAT === 0) return null;
                                 const formatTime = (mins) => {
                                     if (!mins) return '0m';

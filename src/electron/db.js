@@ -89,6 +89,12 @@ export function initDB(customPath) {
             // Column already exists
         }
 
+        try {
+            dbInstance.exec("ALTER TABLE tasks ADD COLUMN actual_time_date TEXT");
+        } catch (e) {
+            // Column already exists
+        }
+
         return true;
     } catch (error) {
         console.error('Failed to initialize database:', error);

@@ -172,7 +172,8 @@ ipcMain.handle('db:get-all', () => {
             reminder: t.reminder || null,
             myDayDate: t.my_day_date || null,
             plannedTime: t.planned_time || null,
-            actualTime: t.actual_time || null
+            actualTime: t.actual_time || null,
+            actualTimeDate: t.actual_time_date || null
         }));
 
         const settings = settingsRows.reduce((acc, row) => {
@@ -190,8 +191,8 @@ ipcMain.handle('db:get-all', () => {
 ipcMain.handle('db:add-task', (_, task) => {
     const db = getDB();
     const stmt = db.prepare(`
-        INSERT INTO tasks (id, title, description, status, created_at, tags, importance, urgency, subtasks, target_date, reminder, my_day_date, planned_time, actual_time)
-        VALUES (@id, @title, @description, @status, @createdAt, @tags, @importance, @urgency, @subtasks, @targetDate, @reminder, @myDayDate, @plannedTime, @actualTime)
+        INSERT INTO tasks (id, title, description, status, created_at, tags, importance, urgency, subtasks, target_date, reminder, my_day_date, planned_time, actual_time, actual_time_date)
+        VALUES (@id, @title, @description, @status, @createdAt, @tags, @importance, @urgency, @subtasks, @targetDate, @reminder, @myDayDate, @plannedTime, @actualTime, @actualTimeDate)
     `);
     const info = stmt.run({
         ...task,
@@ -201,7 +202,8 @@ ipcMain.handle('db:add-task', (_, task) => {
         reminder: task.reminder || null,
         myDayDate: task.myDayDate || null,
         plannedTime: task.plannedTime || null,
-        actualTime: task.actualTime || null
+        actualTime: task.actualTime || null,
+        actualTimeDate: task.actualTimeDate || null
     });
     return info.lastInsertRowid;
 });
@@ -215,7 +217,8 @@ ipcMain.handle('db:update-task', (_, { id, updates }) => {
             completedAt: 'completed_at',
             myDayDate: 'my_day_date',
             plannedTime: 'planned_time',
-            actualTime: 'actual_time'
+            actualTime: 'actual_time',
+            actualTimeDate: 'actual_time_date'
         };
         const col = colMap[k] || k;
         return `${col} = @${k}`;

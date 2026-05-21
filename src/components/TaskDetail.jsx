@@ -171,7 +171,13 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                                         style={{ width: '100%', padding: '0.4rem', fontSize: '0.875rem', backgroundColor: 'transparent', color: 'var(--text-primary)' }}
                                         placeholder="0"
                                         value={task.actualTime || ''}
-                                        onChange={(e) => onUpdate(task.id, { actualTime: e.target.value ? parseInt(e.target.value) : null })}
+                                        onChange={(e) => {
+                                            const today = new Date().toISOString().split('T')[0];
+                                            onUpdate(task.id, {
+                                                actualTime: e.target.value ? parseInt(e.target.value) : null,
+                                                actualTimeDate: e.target.value ? today : null
+                                            });
+                                        }}
                                     />
                                 </div>
                             </div>
