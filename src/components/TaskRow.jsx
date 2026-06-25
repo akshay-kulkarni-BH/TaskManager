@@ -1,4 +1,4 @@
-import { AlertCircle, Check, ChevronDown, ChevronUp, Star, Sun } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronUp, Repeat, Star, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 export function TaskRow({ task, onComplete, onSelect, onToggleImportance, onUpdate, selected, activeFilter, onAddToMyDay }) {
@@ -25,10 +25,15 @@ export function TaskRow({ task, onComplete, onSelect, onToggleImportance, onUpda
                 {isCompleted && <Check size={14} strokeWidth={3} />}
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: isCompleted ? 'line-through' : 'none', color: isCompleted ? 'var(--text-placeholder)' : 'var(--text-primary)' }}>
-                <span className="font-normal" style={{ fontSize: '0.9rem' }}>{task.title}</span>
-                <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: isCompleted ? 'line-through' : 'none', color: isCompleted ? 'var(--text-placeholder)' : 'var(--text-primary)', minWidth: 0 }}>
+                <span className="font-normal" style={{ fontSize: '0.9rem', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{task.title}</span>
+                <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', alignItems: 'center', flexWrap: 'wrap', marginTop: '4px' }}>
                     {task.tags?.map(t => <span key={t}>#{t}</span>)}
+                    {task.repeatTask && task.repeatActive && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: 'var(--brand-primary)', fontWeight: 500 }}>
+                            <Repeat size={10} /> Repeat
+                        </span>
+                    )}
 
                     {/* Subtasks Indicator */}
                     {task.subtasks?.length > 0 && (

@@ -1,4 +1,4 @@
-import { Bell, Calendar, Clock, Plus, Search, Tag, X } from 'lucide-react';
+import { Bell, Calendar, Clock, Plus, Repeat, Search, Tag, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { Analytics } from './Analytics';
@@ -9,7 +9,7 @@ import { TaskDetail } from './TaskDetail';
 import { TaskRow } from './TaskRow';
 
 export function Dashboard() {
-    const { tasks, stats, settings, addTask, updateTask, updateSettings } = useTasks();
+    const { tasks, stats, settings, addTask, updateTask, updateSettings, toggleTaskCompleteForToday, completeRepeatSeries } = useTasks();
     const [filter, setFilter] = useState('all');
     const [selectedTaskId, setSelectedTaskId] = useState(null);
     const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) ?? null : null;
@@ -28,6 +28,7 @@ export function Dashboard() {
     const [tagInputValue, setTagInputValue] = useState('');
     const [newTaskPlannedTime, setNewTaskPlannedTime] = useState(null);
     const [isPlannedTimeVisible, setIsPlannedTimeVisible] = useState(false);
+    const [isRepeatTask, setIsRepeatTask] = useState(false);
 
     const dateInputRef = useRef(null);
     const reminderInputRef = useRef(null);
@@ -48,7 +49,19 @@ export function Dashboard() {
 
     // Filter Logic
     const today = new Date().toISOString().split('T')[0];
-    const filteredTasks = tasks.filter(task => {
+    const tasksForDisplay = tasks.map(task => {
+        if (filter !== 'my-day') return task;
+        if (!task.repeatTask || !task.repeatActive) return task;
+        const completedToday = Array.isArray(task.repeatCompletionHistory) && task.repeatCompletionHistory.includes(today);
+        if (!completedToday) return task;
+        return {
+            ...task,
+            status: 'completed',
+            completedAt: `${today}T00:00:00.000Z`
+        };
+    });
+
+    const filteredTasks = tasksForDisplay.filter(task => {
         if (filter === 'archive') return task.status === 'completed';
         // My Day: show pending tasks for today + tasks completed today
         if (filter === 'my-day') {
@@ -90,7 +103,9 @@ export function Dashboard() {
             reminder: newTaskReminder,
             tags: newTaskTags,
             myDayDate: filter === 'my-day' ? today : null,
-            plannedTime: newTaskPlannedTime
+            plannedTime: newTaskPlannedTime,
+            repeatTask: isRepeatTask,
+            repeatActive: isRepeatTask
         });
 
         // Reset Logic
@@ -102,6 +117,7 @@ export function Dashboard() {
         setTagInputValue('');
         setNewTaskPlannedTime(null);
         setIsPlannedTimeVisible(false);
+        setIsRepeatTask(false);
     };
 
     const handleTagInputKeyDown = (e) => {
@@ -266,10 +282,7 @@ export function Dashboard() {
                                         task={task}
                                         selected={selectedTask?.id === task.id}
                                         onSelect={t => setSelectedTaskId(t.id)}
-                                        onComplete={(id) => updateTask(id, {
-                                            status: task.status === 'completed' ? 'pending' : 'completed',
-                                            completedAt: task.status !== 'completed' ? new Date().toISOString() : null
-                                        })}
+                                        onComplete={toggleTaskCompleteForToday}
                                         onToggleImportance={(id) => updateTask(id, { importance: task.importance > 7 ? 1 : 10 })}
                                         onUpdate={updateTask}
                                         activeFilter={filter}
@@ -354,12 +367,22 @@ export function Dashboard() {
                                             >
                                                 <Clock size={18} />
                                             </button>
+
+                                            {/* Repeat Task Toggle */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsRepeatTask(!isRepeatTask)}
+                                                style={{ padding: '6px', borderRadius: '4px', border: 'none', background: isRepeatTask ? 'var(--bg-hover)' : 'transparent', color: isRepeatTask ? 'var(--brand-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                title="Repeat Daily"
+                                            >
+                                                <Repeat size={18} />
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
 
                                 {/* Active Tags & Input Row (appears below if needed) */}
-                                {(newTaskTags.length > 0 || isTagInputVisible || newTaskDate || newTaskReminder || newTaskPlannedTime || isPlannedTimeVisible) && (
+                                {(newTaskTags.length > 0 || isTagInputVisible || newTaskDate || newTaskReminder || newTaskPlannedTime || isPlannedTimeVisible || isRepeatTask) && (
                                     <div style={{ paddingLeft: '2.5rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '12px' }}>
                                         {/* Status Text for Date/Time */}
                                         {newTaskDate && (
@@ -375,6 +398,11 @@ export function Dashboard() {
                                         {newTaskPlannedTime && (
                                             <span style={{ color: 'var(--brand-primary)', fontWeight: 500 }}>
                                                 PT: {newTaskPlannedTime}m
+                                            </span>
+                                        )}
+                                        {isRepeatTask && (
+                                            <span style={{ color: 'var(--brand-primary)', fontWeight: 500 }}>
+                                                Repeat daily
                                             </span>
                                         )}
 
@@ -435,6 +463,7 @@ export function Dashboard() {
                         task={selectedTask}
                         onClose={() => setSelectedTaskId(null)}
                         onUpdate={updateTask}
+                        onCompleteSeries={completeRepeatSeries}
                         onDelete={(id) => {
                             // Basic delete/archive - status 'deleted' or remove
                             updateTask(id, { status: 'deleted' }); // soft delete

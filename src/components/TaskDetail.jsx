@@ -1,7 +1,7 @@
-import { AlertCircle, Bell, Calendar, Check, Clock, Play, Star, Sun, Trash2, X } from 'lucide-react';
+import { AlertCircle, Bell, Calendar, Check, CheckCheck, Clock, Play, Repeat, Star, Sun, Trash2, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
-export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
+export function TaskDetail({ task, onClose, onUpdate, onDelete, onCompleteSeries }) {
     const [title, setTitle] = useState(task.title);
     const [note, setNote] = useState(task.description || '');
     const dateInputRef = React.useRef(null);
@@ -139,6 +139,16 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                             <Play size={18} />
                             {task.status === 'in-progress' ? 'In Progress' : 'Mark as In Progress'}
                         </button>
+
+                        {task.repeatTask && task.repeatActive && (
+                            <button
+                                onClick={() => onCompleteSeries?.(task.id)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.25rem', border: '1px solid #16a34a', background: '#f0fdf4', color: '#15803d', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+                            >
+                                <CheckCheck size={18} />
+                                Complete series
+                            </button>
+                        )}
                     </div>
 
                     {/* Time Tracking Section */}
@@ -189,11 +199,11 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                         <h3 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '1rem' }}>Tags & Priority</h3>
 
                         {/* Special Toggles */}
-                        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                             <button
                                 onClick={() => onUpdate(task.id, { importance: task.importance > 5 ? 1 : 10 })}
                                 style={{
-                                    flex: 1, padding: '0.5rem', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
+                                    flex: 1, minWidth: '90px', padding: '0.5rem', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
                                     border: task.importance > 5 ? '1px solid #7c3aed' : '1px solid var(--border-light)',
                                     backgroundColor: task.importance > 5 ? '#f3e8ff' : 'transparent',
                                     color: task.importance > 5 ? '#7c3aed' : 'var(--text-secondary)',
@@ -205,7 +215,7 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                             <button
                                 onClick={() => onUpdate(task.id, { urgency: task.urgency > 5 ? 1 : 10 })}
                                 style={{
-                                    flex: 1, padding: '0.5rem', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
+                                    flex: 1, minWidth: '90px', padding: '0.5rem', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
                                     border: task.urgency > 5 ? '1px solid #dc2626' : '1px solid var(--border-light)',
                                     backgroundColor: task.urgency > 5 ? '#fee2e2' : 'transparent',
                                     color: task.urgency > 5 ? '#dc2626' : 'var(--text-secondary)',
@@ -213,6 +223,18 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                                 }}
                             >
                                 <AlertCircle size={16} /> Urgent
+                            </button>
+                            <button
+                                onClick={() => onUpdate(task.id, { repeatTask: !task.repeatTask, repeatActive: !task.repeatTask })}
+                                style={{
+                                    flex: 1, minWidth: '90px', padding: '0.5rem', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
+                                    border: task.repeatTask ? '1px solid #0ea5e9' : '1px solid var(--border-light)',
+                                    backgroundColor: task.repeatTask ? '#e0f2fe' : 'transparent',
+                                    color: task.repeatTask ? '#0284c7' : 'var(--text-secondary)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                }}
+                            >
+                                <Repeat size={16} /> Repeat
                             </button>
                         </div>
 
@@ -349,8 +371,15 @@ export function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                         />
                     </div>
 
-                    <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                        Created {new Date(task.createdAt).toLocaleDateString()}
+                    <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
+                        <button
+                            onClick={() => onDelete(task.id)}
+                            style={{ padding: '0.3rem 0.5rem', borderRadius: '0.25rem', color: '#ef4444', border: '1px solid #fecaca', background: '#fef2f2', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                            <Trash2 size={14} />
+                            Delete
+                        </button>
                     </div>
                 </div>
             </div>
